@@ -1,6 +1,6 @@
-#!/usr/bin/python3
+#!/home/cong/miniconda3/envs/fastApiProject/bin/python
 # -- coding: utf-8 -
-#**
+# **
 # * Copyright (c) 2020 Weitian Leung
 # *
 # * This file is part of pywpsrpc.
@@ -8,17 +8,19 @@
 # * This file is distributed under the MIT License.
 # * See the LICENSE file for details.
 # *
-#*
+# *
 
 import os
+import subprocess
 import sys
 
-print(sys.path)
+import timeout_decorator
+
+# print(sys.path)
 import argparse
 
 from pywpsrpc.rpcwpsapi import (createWpsRpcInstance, wpsapi)
 from pywpsrpc.common import (S_OK, QtApp)
-
 
 formats = {
     "doc": wpsapi.wdFormatDocument,
@@ -76,7 +78,7 @@ def convert_to(paths, format, abort_on_fails=False):
 
 
 def convert_file(file, docs, format):
-    hr, doc = docs.Open(file, ReadOnly=True)
+    hr, doc = docs.Open(file, PasswordDocument="cong", ReadOnly=True)
     if hr != S_OK:
         return hr
 
@@ -93,6 +95,7 @@ def convert_file(file, docs, format):
     return ret
 
 
+@timeout_decorator.timeout(10)
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--format", "-f",
@@ -114,11 +117,17 @@ def main():
 
     qApp = QtApp(sys.argv)
 
-    try:
-        convert_to(args.path, args.format, args.abort)
-    except ConvertException as e:
-        print(e)
+    convert_to(args.path, args.format, args.abort)
+
+    return "covert over"
 
 
 if __name__ == "__main__":
-    main()
+    try:
+        a = main()
+        print(a)
+    except Exception as e:
+        print(e)
+    finally:
+        print("kill all wps")
+        subprocess.call("killall wps", shell=True)
