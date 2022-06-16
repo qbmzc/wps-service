@@ -1,7 +1,7 @@
 #!/usr/bin/python3
 # -- coding: utf-8 -
 # **
-# * Copyright (c) 2020 Weitian Leung
+# * Copyright (c) 2020 cong.zheng
 # *
 # * This file is part of pywpsrpc.
 # *
@@ -14,21 +14,14 @@ import os
 import subprocess
 import sys
 
-import timeout_decorator
-
-# print(sys.path)
 import argparse
 
-from pywpsrpc.rpcwpsapi import (createWpsRpcInstance, wpsapi)
+from pywpsrpc.rpcetapi import (createEtRpcInstance, etapi)
+
 from pywpsrpc.common import (S_OK, QtApp)
 
 formats = {
-    "doc": wpsapi.wdFormatDocument,
-    "docx": wpsapi.wdFormatXMLDocument,
-    "rtf": wpsapi.wdFormatRTF,
-    "html": wpsapi.wdFormatHTML,
-    "pdf": wpsapi.wdFormatPDF,
-    "xml": wpsapi.wdFormatXML,
+    "pdf": etapi.XlFixedFormatType.xlTypePDF,
 }
 
 
@@ -46,18 +39,18 @@ ErrCode: {}
 
 
 def convert_to(paths, format, abort_on_fails=False):
-    hr, rpc = createWpsRpcInstance()
+    hr, rpc = createEtRpcInstance()
     if hr != S_OK:
         raise ConvertException("Can't create the rpc instance", hr)
 
-    hr, app = rpc.getWpsApplication()
+    hr, app = rpc.getEtApplication()
     if hr != S_OK:
         raise ConvertException("Can't get the application", hr)
 
     # we don't need the gui
     app.Visible = False
 
-    docs = app.Documents
+    docs = app.Workbooks
 
     def _handle_result(hr):
         if abort_on_fails and hr != S_OK:
@@ -78,7 +71,7 @@ def convert_to(paths, format, abort_on_fails=False):
 
 
 def convert_file(file, docs, format):
-    hr, doc = docs.Open(file, PasswordDocument="cong", ReadOnly=True)
+    hr, doc = docs.Open(file, Password='xxx', ReadOnly=True)
     if hr != S_OK:
         return hr
 
@@ -87,21 +80,20 @@ def convert_file(file, docs, format):
 
     # you have to handle if the new_file already exists
     new_file = out_dir + "/" + os.path.splitext(os.path.basename(file))[0] + "." + format
-    ret = doc.SaveAs2(new_file, FileFormat=formats[format])
+    ret = doc.ExportAsFixedFormat(formats[format], new_file)
 
     # always close the doc
-    doc.Close(wpsapi.wdDoNotSaveChanges)
+    doc.Close()
 
     return ret
 
 
-@timeout_decorator.timeout(10)
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--format", "-f",
                         required=True,
                         metavar="<DOC_TYPE>",
-                        choices=["doc", "docx", "rtf", "html", "pdf", "xml"],
+                        choices=["pdf"],
                         help="convert to <DOC_TYPE>,")
 
     parser.add_argument("--abort", "-a",
@@ -116,18 +108,17 @@ def main():
     args = parser.parse_args()
 
     qApp = QtApp(sys.argv)
-
-    convert_to(args.path, args.format, args.abort)
-
-    return "covert over"
-
-
-if __name__ == "__main__":
     try:
-        a = main()
-        print(a)
+        convert_to(args.path, args.format, args.abort)
+        print("covert over")
     except Exception as e:
         print(e)
     finally:
-        print("kill all wps")
-        subprocess.call("killall wps", shell=True)
+        # ubuntu
+        # apt install psmisc
+        print("kill all et")
+        subprocess.call("killall -9 et", shell=True)
+
+
+if __name__ == "__main__":
+    main()
