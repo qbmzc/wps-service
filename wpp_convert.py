@@ -82,7 +82,7 @@ def convert_to(paths, format, abort_on_fails=False):
 
 
 def convert_file(file, docs, format):
-    hr, doc = docs.Open(file, ReadOnly=True)
+    hr, doc = docs.Open(file, Pasword='123456',ReadOnly=True)
     if hr != S_OK:
         return hr
 
