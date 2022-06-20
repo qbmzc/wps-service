@@ -17,7 +17,6 @@ import sys
 import argparse
 
 from pywpsrpc.rpcwppapi import (createWppRpcInstance, wppapi)
-from pywpsrpc import common
 from pywpsrpc.common import (S_OK, QtApp)
 
 formats = {
@@ -37,15 +36,6 @@ Details: {}
 ErrCode: {}
 """.format(self.text, hex(self.hr & 0xFFFFFFFF))
 
-
-def check_call(funcName, hr, value=None):
-    if not common.SUCCEEDED(hr):
-        print("call {} failed with code: {}".format(funcName, hr))
-        sys.exit(-1)
-    if value != None:
-        print("{}: {}".format(funcName, value))
-    else:
-        print("{}: <ok>".format(funcName))
 
 
 def convert_to(paths, format, abort_on_fails=False):
@@ -82,7 +72,7 @@ def convert_to(paths, format, abort_on_fails=False):
 
 
 def convert_file(file, docs, format):
-    hr, doc = docs.Open(file, Pasword='123456',ReadOnly=True)
+    hr, doc = docs.Open(file,ReadOnly=True)
     if hr != S_OK:
         return hr
 
@@ -121,7 +111,7 @@ def main():
     qApp = QtApp(sys.argv)
     try:
         convert_to(args.path, args.format, args.abort)
-        print("covert over")
+        print("convert over")
     except Exception as e:
         print(e)
     finally:

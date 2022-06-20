@@ -117,17 +117,18 @@ def main():
 
     qApp = QtApp(sys.argv)
 
-    convert_to(args.path, args.format, args.abort)
-
-    return "covert over"
-
-
-if __name__ == "__main__":
     try:
-        a = main()
-        print(a)
+        convert_to(args.path, args.format, args.abort)
+        print("convert over")
     except Exception as e:
         print(e)
     finally:
+        # ubuntu
+        # apt install psmisc
         print("kill all wps")
-        subprocess.call("killall wps", shell=True)
+        subprocess.call("killall -9 wps", shell=True)
+
+
+if __name__ == "__main__":
+    a = main()
+
