@@ -1,5 +1,5 @@
 #!/usr/bin/python3
-# -- coding: utf-8 -
+
 # **
 # * Copyright (c) 2020 Weitian Leung
 # *
@@ -13,10 +13,6 @@
 import os
 import subprocess
 import sys
-
-import timeout_decorator
-
-# print(sys.path)
 import argparse
 
 from pywpsrpc.rpcwpsapi import (createWpsRpcInstance, wpsapi)
@@ -78,7 +74,7 @@ def convert_to(paths, format, abort_on_fails=False):
 
 
 def convert_file(file, docs, format):
-    hr, doc = docs.Open(file, PasswordDocument="cong", ReadOnly=True)
+    hr, doc = docs.Open(file, PasswordDocument='xxx', ReadOnly=True)
     if hr != S_OK:
         return hr
 
@@ -95,7 +91,6 @@ def convert_file(file, docs, format):
     return ret
 
 
-@timeout_decorator.timeout(10)
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--format", "-f",
@@ -119,16 +114,12 @@ def main():
 
     try:
         convert_to(args.path, args.format, args.abort)
-        print("convert over")
-    except Exception as e:
+    except ConvertException as e:
         print(e)
     finally:
-        # ubuntu
-        # apt install psmisc
-        print("kill all wps")
+        # 杀死所有wps进程
         subprocess.call("killall -9 wps", shell=True)
 
 
 if __name__ == "__main__":
-    a = main()
-
+    main()
