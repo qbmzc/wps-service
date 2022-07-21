@@ -51,6 +51,9 @@ def convert_to(paths, format, abort_on_fails=False):
     app.Visible = False
 
     docs = app.Workbooks
+    if docs.HasPassword == True:
+        print("Remember to obtain the workbook password from the Network Administrator.")
+        raise  ConvertException("Can't open the workbook no password")
 
     def _handle_result(hr):
         if abort_on_fails and hr != S_OK:
@@ -110,7 +113,7 @@ def main():
     qApp = QtApp(sys.argv)
     try:
         convert_to(args.path, args.format, args.abort)
-        print("covert over")
+        print("convert over")
     except Exception as e:
         print(e)
     finally:

@@ -1,5 +1,5 @@
 #!/usr/bin/python3
-# -- coding: utf-8 -
+
 # **
 # * Copyright (c) 2020 Weitian Leung
 # *
@@ -13,7 +13,6 @@
 import os
 import subprocess
 import sys
-
 import argparse
 
 from pywpsrpc.rpcwpsapi import (createWpsRpcInstance, wpsapi)
@@ -50,7 +49,7 @@ def convert_to(paths, format, abort_on_fails=False):
     hr, app = rpc.getWpsApplication()
     if hr != S_OK:
         raise ConvertException("Can't get the application", hr)
-    hr, pid = rpc.getProcessPid()
+
     # we don't need the gui
     app.Visible = False
 
@@ -70,14 +69,12 @@ def convert_to(paths, format, abort_on_fails=False):
         else:
             hr = convert_file(abs_path, docs, format)
             _handle_result(hr)
-    print("app quit")
+
     app.Quit()
-    print("exit")
-    subprocess.call("kill -9 " + str(pid), shell=True)
 
 
 def convert_file(file, docs, format):
-    hr, doc = docs.Open(file, PasswordDocument="cong", ReadOnly=True)
+    hr, doc = docs.Open(file, PasswordDocument='xxx', ReadOnly=True)
     if hr != S_OK:
         return hr
 
@@ -87,10 +84,10 @@ def convert_file(file, docs, format):
     # you have to handle if the new_file already exists
     new_file = out_dir + "/" + os.path.splitext(os.path.basename(file))[0] + "." + format
     ret = doc.SaveAs2(new_file, FileFormat=formats[format])
-    print("convert pdf")
+
     # always close the doc
     doc.Close(wpsapi.wdDoNotSaveChanges)
-    print("close doc")
+
     return ret
 
 
@@ -114,10 +111,14 @@ def main():
     args = parser.parse_args()
 
     qApp = QtApp(sys.argv)
+
     try:
         convert_to(args.path, args.format, args.abort)
-    except Exception as e:
+    except ConvertException as e:
         print(e)
+    finally:
+        # 杀死所有wps进程
+        subprocess.call("killall -9 wps", shell=True)
 
 
 if __name__ == "__main__":
