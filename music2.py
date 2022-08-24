@@ -82,10 +82,13 @@ entry = Entry(root, font=('宋体', 28))
 entry.grid(row=0, column=1)
 # 单选按钮
 var = StringVar()
-r1 = Radiobutton(root, text='网易云', variable=var, value='netease', state="active")
+r1 = Radiobutton(root, text='网易云', variable=var, value='netease')
 r1.grid(row=1, column=0)
 r2 = Radiobutton(root, text='QQ', variable=var, value='qq')
 r2.grid(row=1, column=1)
+
+r3 = Radiobutton(root, text='kuwo', variable=var, value='kuwo')
+r3.grid(row=1, column=2)
 # 列表框
 text = Listbox(root, font=('楷体', 16), width=100, height=25)
 text.grid(row=2, columnspan=2)
