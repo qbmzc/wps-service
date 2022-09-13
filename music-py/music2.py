@@ -57,7 +57,7 @@ def get_music_name():
     }
     res = requests.post(url=url, data=param, headers=headers)
     json_text = res.json()
-
+    print(json_text)
     title = jsonpath.jsonpath(json_text, '$..title')
     author = jsonpath.jsonpath(json_text, '$..author')
     url = jsonpath.jsonpath(json_text, '$..url')
@@ -90,7 +90,7 @@ r2.grid(row=1, column=1)
 r3 = Radiobutton(root, text='kuwo', variable=var, value='kuwo')
 r3.grid(row=1, column=2)
 # 列表框
-text = Listbox(root, font=('楷体', 16), width=100, height=25)
+text = Listbox(root, font=('楷体', 16), width=50, height=15)
 text.grid(row=2, columnspan=2)
 # 下载按钮
 button1 = Button(root, text='开始下载', font=('楷体', 15), command=get_music_name)

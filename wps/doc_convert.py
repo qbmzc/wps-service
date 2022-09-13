@@ -1,7 +1,7 @@
 #!/usr/bin/python3
-# -- coding: utf-8 -
+
 # **
-# * Copyright (c) 2020 cong.zheng
+# * Copyright (c) 2020 Weitian Leung
 # *
 # * This file is part of pywpsrpc.
 # *
@@ -11,17 +11,21 @@
 # *
 
 import os
-import subprocess
 import sys
-
 import argparse
 
-from pywpsrpc.rpcwppapi import (createWppRpcInstance, wppapi)
+from pywpsrpc.rpcwpsapi import (createWpsRpcInstance, wpsapi)
 from pywpsrpc.common import (S_OK, QtApp)
 
 formats = {
-    "pdf": wppapi.PpSaveAsFileType.ppSaveAsPDF,
+    "doc": wpsapi.wdFormatDocument,
+    "docx": wpsapi.wdFormatXMLDocument,
+    "rtf": wpsapi.wdFormatRTF,
+    "html": wpsapi.wdFormatHTML,
+    "pdf": wpsapi.wdFormatPDF,
+    "xml": wpsapi.wdFormatXML,
 }
+pid = None
 
 
 class ConvertException(Exception):
@@ -37,21 +41,23 @@ ErrCode: {}
 """.format(self.text, hex(self.hr & 0xFFFFFFFF))
 
 
-
 def convert_to(paths, format, abort_on_fails=False):
-    hr, rpc = createWppRpcInstance()
+    hr, rpc = createWpsRpcInstance()
     if hr != S_OK:
         raise ConvertException("Can't create the rpc instance", hr)
 
-    hr, app = rpc.getWppApplication()
+    hr, app = rpc.getWpsApplication()
     if hr != S_OK:
         raise ConvertException("Can't get the application", hr)
-
+    global pid
+    hr, pid = rpc.getProcessPid()
+    if hr != S_OK:
+        raise ConvertException("Can't  get the PID", hr)
+    print("PID:{}".format(pid))
     # we don't need the gui
-    # Call 'put_Visible()' failed with 0x80010105
-    # app.Visible = wppapi.MsoTriState.msoFalse
+    app.Visible = False
 
-    docs = app.Presentations
+    docs = app.Documents
 
     def _handle_result(hr):
         if abort_on_fails and hr != S_OK:
@@ -72,7 +78,7 @@ def convert_to(paths, format, abort_on_fails=False):
 
 
 def convert_file(file, docs, format):
-    hr, doc = docs.Open(file,ReadOnly=True)
+    hr, doc = docs.Open(file, PasswordDocument='xxx', ReadOnly=True)
     if hr != S_OK:
         return hr
 
@@ -81,10 +87,10 @@ def convert_file(file, docs, format):
 
     # you have to handle if the new_file already exists
     new_file = out_dir + "/" + os.path.splitext(os.path.basename(file))[0] + "." + format
-    ret = doc.SaveAs(new_file, formats[format])
+    ret = doc.SaveAs2(new_file, FileFormat=formats[format])
 
     # always close the doc
-    doc.Close()
+    doc.Close(wpsapi.wdDoNotSaveChanges)
 
     return ret
 
@@ -94,7 +100,7 @@ def main():
     parser.add_argument("--format", "-f",
                         required=True,
                         metavar="<DOC_TYPE>",
-                        choices=["pdf"],
+                        choices=["doc", "docx", "rtf", "html", "pdf", "xml"],
                         help="convert to <DOC_TYPE>,")
 
     parser.add_argument("--abort", "-a",
@@ -109,16 +115,14 @@ def main():
     args = parser.parse_args()
 
     qApp = QtApp(sys.argv)
+
     try:
         convert_to(args.path, args.format, args.abort)
-        print("convert over")
-    except Exception as e:
+    except ConvertException as e:
         print(e)
     finally:
-        # ubuntu
-        # apt install psmisc
-        print("kill all wpp")
-        subprocess.call("killall -9 wpp", shell=True)
+        if pid is not None:
+            os.system("kill -9 {}".format(pid))
 
 
 if __name__ == "__main__":
