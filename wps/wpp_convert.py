@@ -11,6 +11,7 @@
 # *
 
 import os
+import subprocess
 import sys
 
 import argparse
@@ -22,7 +23,8 @@ from pywpsrpc.common import (S_OK, QtApp)
 formats = {
     "pdf": wppapi.PpSaveAsFileType.ppSaveAsPDF,
 }
-pid =None
+pid = None
+
 
 class ConvertException(Exception):
 
@@ -35,6 +37,7 @@ class ConvertException(Exception):
 Details: {}
 ErrCode: {}
 """.format(self.text, hex(self.hr & 0xFFFFFFFF))
+
 
 def check_call(funcName, hr, value=None):
     if not common.SUCCEEDED(hr):
@@ -129,7 +132,7 @@ def main():
     finally:
         # ubuntu
         if pid is not None:
-            os.system("kill -9 {}".format(pid))
+            subprocess.Popen("kill -9 {}".format(pid), shell=True).wait()
 
 
 if __name__ == "__main__":

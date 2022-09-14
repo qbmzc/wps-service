@@ -11,6 +11,7 @@
 # *
 
 import os
+import subprocess
 import sys
 import argparse
 
@@ -121,8 +122,9 @@ def main():
     except ConvertException as e:
         print(e)
     finally:
+        # ubuntu
         if pid is not None:
-            os.system("kill -9 {}".format(pid))
+            subprocess.Popen("kill -9 {}".format(pid), shell=True).wait()
 
 
 if __name__ == "__main__":

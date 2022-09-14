@@ -11,6 +11,7 @@
 # *
 
 import os
+import subprocess
 import sys
 
 import argparse
@@ -23,6 +24,7 @@ formats = {
     "pdf": etapi.XlFixedFormatType.xlTypePDF,
 }
 pid = None
+
 
 class ConvertException(Exception):
 
@@ -118,7 +120,7 @@ def main():
         print(e)
     finally:
         if pid is not None:
-            os.system("kill -9 {}".format(pid))
+            subprocess.Popen("kill -9 {}".format(pid), shell=True).wait()
 
 
 if __name__ == "__main__":
