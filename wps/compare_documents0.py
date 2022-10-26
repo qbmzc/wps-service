@@ -1,7 +1,7 @@
 #!/usr/bin/python3
-
+# -- coding: utf-8 -
 # **
-# * Copyright (c) 2020 Weitian Leung
+# * Copyright (c) 2020 cong.zheng
 # *
 # * This file is part of pywpsrpc.
 # *
@@ -13,18 +13,15 @@
 import os
 import subprocess
 import sys
+
 import argparse
 
-from pywpsrpc.rpcwpsapi import (createWpsRpcInstance, wpsapi)
+from pywpsrpc.rpcetapi import (createEtRpcInstance, etapi)
+
 from pywpsrpc.common import (S_OK, QtApp)
 
 formats = {
-    "doc": wpsapi.wdFormatDocument,
-    "docx": wpsapi.wdFormatXMLDocument,
-    "rtf": wpsapi.wdFormatRTF,
-    "html": wpsapi.wdFormatHTML,
-    "pdf": wpsapi.wdFormatPDF,
-    "xml": wpsapi.wdFormatXML,
+    "pdf": etapi.XlFixedFormatType.xlTypePDF,
 }
 pid = None
 
@@ -43,11 +40,11 @@ ErrCode: {}
 
 
 def convert_to(paths, format, abort_on_fails=False):
-    hr, rpc = createWpsRpcInstance()
+    hr, rpc = createEtRpcInstance()
     if hr != S_OK:
         raise ConvertException("Can't create the rpc instance", hr)
 
-    hr, app = rpc.getWpsApplication()
+    hr, app = rpc.getEtApplication()
     if hr != S_OK:
         raise ConvertException("Can't get the application", hr)
     global pid
@@ -58,7 +55,7 @@ def convert_to(paths, format, abort_on_fails=False):
     # we don't need the gui
     app.Visible = False
 
-    docs = app.Documents
+    docs = app.Workbooks
 
     def _handle_result(hr):
         if abort_on_fails and hr != S_OK:
@@ -76,11 +73,10 @@ def convert_to(paths, format, abort_on_fails=False):
             _handle_result(hr)
 
     app.Quit()
-    exit(0)
 
 
 def convert_file(file, docs, format):
-    hr, doc = docs.Open(file, PasswordDocument='xxx', ReadOnly=True)
+    hr, doc = docs.Open(file, Password='xxx', ReadOnly=True)
     if hr != S_OK:
         return hr
 
@@ -89,22 +85,39 @@ def convert_file(file, docs, format):
 
     # you have to handle if the new_file already exists
     new_file = out_dir + "/" + os.path.splitext(os.path.basename(file))[0] + "." + format
-    ret = doc.SaveAs2(new_file, FileFormat=formats[format])
-    with open('/opt/log.txt', 'a') as f:
-        print('ret', file=f)
+    ret = doc.ExportAsFixedFormat(formats[format], new_file)
+
     # always close the doc
-    doc.Close(wpsapi.wdDoNotSaveChanges)
-    with open('/opt/log.txt', 'a') as f:
-        print('close', file=f)
+    doc.Close()
+
     return ret
 
+
+def compare_documents(original_file, revised_file, docs):
+    hr, ori_doc = docs.Open(original_file, Password='xxx', ReadOnly=True)
+    if hr != S_OK:
+        return hr
+    hr, rev_doc = docs.Open(revised_file, Password='xxx', ReadOnly=True)
+    if hr != S_OK:
+        return hr
+
+    out_dir = os.path.dirname(os.path.realpath(original_file)) + "/compare"
+    os.makedirs(out_dir, exist_ok=True)
+    new_file = new_file = out_dir + "/" + os.path.splitext(os.path.basename(original_file))[0] + "_compare.docx"
+
+    docs.CompareDocuments(ori_doc,rev_doc)
+    ori_doc.Close()
+    rev_doc.Close()
+    act_doc = docs.ActiveDocument()
+    act_doc.SaveAs(FileName=new_file)
+    act_doc.Close()
 
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--format", "-f",
                         required=True,
                         metavar="<DOC_TYPE>",
-                        choices=["doc", "docx", "rtf", "html", "pdf", "xml"],
+                        choices=["pdf"],
                         help="convert to <DOC_TYPE>,")
 
     parser.add_argument("--abort", "-a",
@@ -119,25 +132,15 @@ def main():
     args = parser.parse_args()
 
     qApp = QtApp(sys.argv)
-
     try:
         convert_to(args.path, args.format, args.abort)
-        with open('/opt/log.txt', 'a') as f:
-            print('convert_to', file=f)
+        print("convert over")
     except Exception as e:
-        with open('/opt/log.txt', 'a') as f:
-            print(e, file=f)
-        # print(e)
+        print(e)
     finally:
-        with open('/opt/log.txt', 'a') as f:
-            print("finally 1", file=f)
-        # ubuntu
         if pid is not None:
             subprocess.Popen("kill -9 {}".format(pid), shell=True).wait()
-        with open('/opt/log.txt', 'a') as f:
-            print("finally 2", file=f)
-        exit(0)
+
 
 if __name__ == "__main__":
     main()
-    exit(0)
